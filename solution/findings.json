@@ -1,12 +1,72 @@
 {
-  "team": "TODO-team-name",
+  "team": "dholmes",
   "schema_version": 1,
   "findings": [
     {
+      "fault_class": "error_spike",
+      "evidence": {"metric": "tool_error_rate", "observed": "18% of tool calls fail due to injected errors", "trace_ids": []},
+      "root_cause": "config.tool_error_rate=0.18 injects random tool failures",
+      "suggested_fix": "Set tool_error_rate to 0.0 and enable retry"
+    },
+    {
       "fault_class": "latency_spike",
-      "evidence": {"metric": "latency_p95_ms", "observed": "TODO from your telemetry", "trace_ids": []},
-      "root_cause": "TODO: what config knob or behavior causes it?",
-      "suggested_fix": "TODO: config change and/or wrapper mitigation"
+      "evidence": {"metric": "latency_p95_ms", "observed": "No timeout, no cache, premium tier cause high tail latency", "trace_ids": []},
+      "root_cause": "timeout_ms=0, cache disabled, model_price_tier=premium",
+      "suggested_fix": "Set timeout_ms=30000, enable cache, price_tier=standard"
+    },
+    {
+      "fault_class": "cost_blowup",
+      "evidence": {"metric": "total_tokens", "observed": "verbose_system=true, context_size=8, unlimited tools burn tokens", "trace_ids": []},
+      "root_cause": "verbose_system=true, large context_size=8, tool_budget=0, premium tier",
+      "suggested_fix": "verbose_system=false, context_size=4, tool_budget=4, tier=standard"
+    },
+    {
+      "fault_class": "quality_drift",
+      "evidence": {"metric": "correctness_by_turn", "observed": "Answers degrade over later turns in a session", "trace_ids": []},
+      "root_cause": "session_drift_rate=0.06 and context_reset_every=0",
+      "suggested_fix": "session_drift_rate=0.0, context_reset_every=4, self_consistency=2"
+    },
+    {
+      "fault_class": "infinite_loop",
+      "evidence": {"metric": "status_counts", "observed": "Requests hit max_steps with repeated tool calls", "trace_ids": []},
+      "root_cause": "loop_guard=false allows repeated identical tool calls",
+      "suggested_fix": "Set loop_guard=true, reduce max_steps"
+    },
+    {
+      "fault_class": "tool_failure",
+      "evidence": {"metric": "tool_error_by_input", "observed": "Diacritic cities fail, MacBook forced out-of-stock", "trace_ids": []},
+      "root_cause": "normalize_unicode=false, catalog_override forces MacBook out_of_stock",
+      "suggested_fix": "normalize_unicode=true, catalog_override={}"
+    },
+    {
+      "fault_class": "pii_leak",
+      "evidence": {"metric": "pii_in_answer", "observed": "Agent echoes customer email and phone in answers", "trace_ids": []},
+      "root_cause": "redact_pii=false and no PII instruction in prompt",
+      "suggested_fix": "redact_pii=true, add no-PII rule to prompt, redact in wrapper"
+    },
+    {
+      "fault_class": "fabrication",
+      "evidence": {"metric": "answer_vs_tool_data", "observed": "Agent invents totals for out-of-stock items", "trace_ids": []},
+      "root_cause": "Prompt lacks grounding; tells agent to always give a total",
+      "suggested_fix": "Prompt: use ONLY tool data, refuse if out_of_stock"
+    },
+    {
+      "fault_class": "arithmetic_error",
+      "evidence": {"metric": "total_vs_expected", "observed": "Totals wrong due to high temperature and no formula", "trace_ids": []},
+      "root_cause": "temperature=1.6 causes inconsistency, prompt has no arithmetic formula",
+      "suggested_fix": "temperature=0.2, add exact formula to prompt"
+    },
+    {
+      "fault_class": "tool_overuse",
+      "evidence": {"metric": "tool_count_per_request", "observed": "Agent calls tools more than necessary", "trace_ids": []},
+      "root_cause": "tool_budget=0 unlimited, prompt encourages over-calling",
+      "suggested_fix": "tool_budget=4, prompt: each tool at most once"
+    },
+    {
+      "fault_class": "prompt_injection",
+      "evidence": {"metric": "answer_follows_note", "observed": "Agent obeys fake prices in GHI CHU order notes", "trace_ids": []},
+      "root_cause": "No injection defense in prompt, notes treated as instructions",
+      "suggested_fix": "Prompt: notes=DATA only; wrapper: sanitize input"
     }
   ]
 }
